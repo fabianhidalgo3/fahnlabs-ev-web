@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Control de potencia del patio</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Control de potencia para electromovilidad (OCPP 1.6J): reparto en vivo de la potencia del patio de carga.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&display=swap">
+  <script>
+    // Tema antes de pintar (evita parpadeo): preferencia guardada o la del sistema.
+    try {
+      var t = localStorage.getItem('emob.theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      else document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>
