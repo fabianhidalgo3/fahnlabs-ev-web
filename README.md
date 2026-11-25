@@ -1,59 +1,50 @@
-# Front
+# ev-web · Yard dashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.3.0.
+Part of **EV yard power control** by FAHNLABS: real-time power allocation for an electric-vehicle charging yard.
+Overview, architecture and deployment: [fahnlabs-ev-deploy](https://github.com/fabianhidalgo3/fahnlabs-ev-deploy).
 
-## Development server
+Operations dashboard with the "yard switchboard" design: the busbar shows the yard limit as a hazard band and each
+charger is a circuit. It only talks to [ev-bff](https://github.com/fabianhidalgo3/fahnlabs-ev-bff).
 
-To start a local development server, run:
+## Stack
 
-```bash
-ng serve
-```
+Angular 22 (standalone components, signals, zoneless) · runtime English / Spanish · light / dark theme · mobile
+layout from 375 px · Archivo typeface.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Run
 
 ```bash
-ng generate component component-name
+npm install
+npm start                 # http://localhost:4200, proxies /api and /ws to the BFF on :9000
+npm run build             # dist/front/browser, served by the BFF
+npm test                  # unit tests (Vitest)
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Pages
 
-```bash
-ng generate --help
-```
+| Page | Content |
+|---|---|
+| Operations | Busbar with the yard limit, live power per charger, engine settings |
+| Yard | Chargers as circuits, connectors and running sessions |
+| Calendar | Charging plans with departure time, target SoC and power limit |
+| Sessions | Session history and power samples |
+| Vehicles, Chargers | Master data (VIN, RFID, EVCCID, priority, maximum power) |
+| Engine | OCPP commands, OCPP log, MeterValues |
+| Energy | Controlled demand versus immediate charging, avoided peak, savings, CO₂ |
 
-## Building
+The AI assistant sits in the top bar.
 
-To build the project run:
+## Code
 
-```bash
-ng build
-```
+| Path | Content |
+|---|---|
+| `src/app/app.ts`, `app.routes.ts` | Shell and routes |
+| `src/app/pages/` | Pages |
+| `src/app/i18n/en.ts`, `es.ts` | UI text (same keys in both languages) |
+| `src/styles.css`, `src/layout.css` | Colour tokens and layout |
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+All UI text goes through the i18n dictionaries and all colours through CSS tokens.
 
-## Running unit tests
+## Author
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+© 2026 Fabián Hidalgo · FAHNLABS. All rights reserved.
