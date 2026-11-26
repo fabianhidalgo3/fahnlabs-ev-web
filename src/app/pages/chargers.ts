@@ -34,12 +34,12 @@ interface Row {
           <label>{{ t('chg.location') }}<input name="location" maxlength="120" [(ngModel)]="newLocation" /></label>
           <label>{{ t('chg.maxPower') }}<input name="max" type="number" step="0.1" min="1" [(ngModel)]="newMax" /></label>
           <label>{{ t('veh.priority') }}<input name="prio" type="number" min="1" max="10" [(ngModel)]="newPrio" /></label>
-          <button class="primary" type="submit">{{ t('chg.register') }}</button>
+          <button class="primary" type="submit" [disabled]="ui.busy('charger:new')">{{ t('chg.register') }}</button>
         </form>
       </section>
       <section class="panel">
         <h2>{{ t('chg.policyTitle') }}</h2>
-        <label class="check"><input type="checkbox" [checked]="acceptUnknown()" (change)="setAccept($any($event.target).checked)" /> {{ t('chg.acceptUnknown') }}</label>
+        <label class="check"><input type="checkbox" [checked]="acceptUnknown()" [disabled]="ui.busy('accept')" (change)="setAccept($any($event.target).checked)" /> {{ t('chg.acceptUnknown') }}</label>
         <p class="note">{{ t('chg.policyNote') }}</p>
         <p class="note">{{ t('chg.ocppUrl') }} <code>{{ ocppUrl() }}</code></p>
       </section>
@@ -61,8 +61,8 @@ interface Row {
                 <td class="n">{{ r.connectors }}</td><td class="nowrap">{{ fmtDate(r.lastSeen) }}</td>
                 <td class="actions">
                   <button class="sm" (click)="fleet.openStart(r.id, 1)">{{ t('ops.start') }}</button>
-                  <button class="sm" (click)="save(r.id)">{{ t('common.save') }}</button>
-                  @if (!r.connected) { <button class="sm danger" (click)="remove(r.id)">{{ t('common.delete') }}</button> }
+                  <button class="sm" [disabled]="ui.busy('charger:' + r.id)" (click)="save(r.id)">{{ t('common.save') }}</button>
+                  @if (!r.connected) { <button class="sm danger" [disabled]="ui.busy('charger:' + r.id)" (click)="remove(r.id)">{{ t('common.delete') }}</button> }
                 </td>
               </tr>
             } @empty { <tr><td colspan="9" class="muted">{{ t('chg.none') }}</td></tr> }
@@ -75,7 +75,7 @@ interface Row {
 })
 export class Chargers {
   private api = inject(Api);
-  private ui = inject(Ui);
+  protected ui = inject(Ui);
   private live = inject(Live);
   protected fleet = inject(Fleet);
   protected nav = inject(Nav);
@@ -130,7 +130,8 @@ export class Chargers {
   }
   async register() {
     const body = { id: this.newId.trim(), location: this.newLocation.trim(), maxPowerKw: this.newMax, priority: this.newPrio };
-    if ((await this.ui.run(() => this.api.post('/chargers', body), this.t('chg.registered', { id: body.id }))) !== undefined) {
+    if (this.ui.busy('charger:new')) return;
+    if ((await this.ui.run(() => this.api.post('/chargers', body), this.t('chg.registered', { id: body.id }), 'charger:new')) !== undefined) {
       this.newId = '';
       this.newLocation = '';
       this.load();
@@ -141,16 +142,17 @@ export class Chargers {
     await this.ui.run(
       () => this.api.put(`/chargers/${encodeURIComponent(id)}`, { location: e.location, maxPowerKw: Number(e.maxPowerKw), priority: Number(e.priority) }),
       'chg.updated',
+      'charger:' + id,
     );
     this.load();
   }
   async remove(id: string) {
-    if (!confirm(this.t('chg.confirmDelete', { id }))) return;
-    await this.ui.run(() => this.api.del(`/chargers/${encodeURIComponent(id)}`), 'chg.deleted');
+    if (this.ui.busy('charger:' + id) || !confirm(this.t('chg.confirmDelete', { id }))) return;
+    await this.ui.run(() => this.api.del(`/chargers/${encodeURIComponent(id)}`), 'chg.deleted', 'charger:' + id);
     delete this.edits[id];
     this.load();
   }
   async setAccept(v: boolean) {
-    await this.ui.run(() => this.api.put('/config', { acceptUnknownChargers: v }), v ? 'chg.acceptOn' : 'chg.acceptOff');
+    await this.ui.run(() => this.api.put('/config', { acceptUnknownChargers: v }), v ? 'chg.acceptOn' : 'chg.acceptOff', 'accept');
   }
 }

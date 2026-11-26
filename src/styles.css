@@ -82,6 +82,7 @@ button, .btn {
 }
 button:hover:not(:disabled), .btn:hover { border-color: var(--ink); }
 button:disabled { opacity: 0.45; cursor: default; }
+a[aria-disabled='true'] { opacity: 0.45; pointer-events: none; cursor: default; }
 button.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 button.primary:hover:not(:disabled) { background: var(--carga); border-color: var(--carga); }
 button.danger { color: var(--falla); }

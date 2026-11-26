@@ -113,7 +113,7 @@ export class StartDialog {
 
   async submit() {
     const target = this.fleet.startFor();
-    if (!target) return;
+    if (!target || this.busy()) return;
     const later = this.later();
     const body = {
       chargerId: target.chargerId,

@@ -33,7 +33,7 @@ const EMPTY: Form = { id: null, name: '', make: '', model: '', vin: '', evccid: 
         <label>{{ t('veh.targetSoc') }}<input name="target_soc" type="number" min="10" max="100" [(ngModel)]="form.target_soc" /></label>
         <label>{{ t('veh.priority') }}<input name="priority" type="number" min="1" max="10" [(ngModel)]="form.priority" /></label>
         <div class="row">
-          <button class="primary" type="submit">{{ t(form.id ? 'common.saveChanges' : 'veh.create') }}</button>
+          <button class="primary" type="submit" [disabled]="ui.busy('vehicle:' + (form.id ?? 'new'))">{{ t(form.id ? 'common.saveChanges' : 'veh.create') }}</button>
           @if (form.id) { <button type="button" (click)="reset()">{{ t('common.cancel') }}</button> }
         </div>
       </form>
@@ -51,7 +51,7 @@ const EMPTY: Form = { id: null, name: '', make: '', model: '', vin: '', evccid: 
                 <td><code>{{ v.vin || '–' }}</code></td><td><code>{{ v.evccid || '–' }}</code></td><td>{{ v.id_tag || '–' }}</td>
                 <td class="n">{{ v.battery_kwh }}</td><td class="n">{{ v.max_ac_kw }}</td><td class="n">{{ v.phases }}</td><td class="n">{{ v.target_soc }} %</td><td class="n">{{ v.priority }}</td>
                 <td>@if (charging().get(v.id); as where) { <span class="lamp charge">{{ where }}</span> } @else { <span class="muted">–</span> }</td>
-                <td class="actions"><button class="sm" (click)="edit(v)">{{ t('common.edit') }}</button><button class="sm danger" (click)="remove(v)">{{ t('common.delete') }}</button></td>
+                <td class="actions"><button class="sm" (click)="edit(v)">{{ t('common.edit') }}</button><button class="sm danger" [disabled]="ui.busy('vehicle:' + v.id)" (click)="remove(v)">{{ t('common.delete') }}</button></td>
               </tr>
             } @empty { <tr><td colspan="12" class="muted">{{ t('veh.none') }}</td></tr> }
           </tbody>
@@ -64,7 +64,7 @@ const EMPTY: Form = { id: null, name: '', make: '', model: '', vin: '', evccid: 
 export class Vehicles {
   protected fleet = inject(Fleet);
   private api = inject(Api);
-  private ui = inject(Ui);
+  protected ui = inject(Ui);
   private live = inject(Live);
   protected t = inject(I18n).t;
   private panel = viewChild<ElementRef<HTMLElement>>('formPanel');
@@ -93,9 +93,12 @@ export class Vehicles {
   }
   async save() {
     const { id, ...body } = this.form;
+    const key = 'vehicle:' + (id ?? 'new');
+    if (this.ui.busy(key)) return;
     const ok = await this.ui.run(
       () => (id ? this.api.put(`/vehicles/${id}`, body) : this.api.post('/vehicles', body)),
       id ? 'veh.updated' : 'veh.created',
+      key,
     );
     if (ok !== undefined) {
       this.reset();
@@ -103,8 +106,8 @@ export class Vehicles {
     }
   }
   async remove(v: Vehicle) {
-    if (!confirm(this.t('veh.confirmDelete', { name: v.name }))) return;
-    await this.ui.run(() => this.api.del(`/vehicles/${v.id}`), 'veh.deleted');
+    if (this.ui.busy('vehicle:' + v.id) || !confirm(this.t('veh.confirmDelete', { name: v.name }))) return;
+    await this.ui.run(() => this.api.del(`/vehicles/${v.id}`), 'veh.deleted', 'vehicle:' + v.id);
     this.fleet.load(true);
   }
 }

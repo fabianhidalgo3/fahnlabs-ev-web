@@ -77,7 +77,7 @@ const CONFIG_KEYS = ['siteLimitKw', 'buildingLoadKw', 'buildingLoadMode', 'strat
             <span class="muted small">{{ t('ops.maxKw', { kw: num(ch.maxPowerKw, 1) }) }}</span>
             <span class="spacer"></span>
             <button class="sm" (click)="fleet.openStart(ch.id, 1)">{{ t('ops.startOrSchedule') }}</button>
-            <button class="sm" [disabled]="!ch.connected" (click)="reset(ch)">{{ t('ops.reset') }}</button>
+            <button class="sm" [disabled]="!ch.connected || ui.busy('reset:' + ch.id)" (click)="reset(ch)">{{ t('ops.reset') }}</button>
           </div>
           @for (c of ch.connectors; track c.connectorId) {
             <div class="breaker" [class.active]="c.transactionId" [class.charging]="c.powerW > 50" [attr.data-hl]="ch.id + '#' + c.connectorId">
@@ -116,7 +116,7 @@ const CONFIG_KEYS = ['siteLimitKw', 'buildingLoadKw', 'buildingLoadMode', 'strat
               </div>
               <div class="b-act">
                 @if (c.transactionId) {
-                  <button class="sm danger" [disabled]="!ch.connected" (click)="stop(ch, c)">{{ t('ops.stop') }}</button>
+                  <button class="sm danger" [disabled]="!ch.connected || ui.busy('stop:' + ch.id + '#' + c.connectorId)" (click)="stop(ch, c)">{{ t('ops.stop') }}</button>
                 } @else {
                   <button class="sm" [disabled]="c.status === 'Faulted'" (click)="fleet.openStart(ch.id, c.connectorId)">{{ t('ops.start') }}</button>
                 }
@@ -165,7 +165,7 @@ const CONFIG_KEYS = ['siteLimitKw', 'buildingLoadKw', 'buildingLoadMode', 'strat
             <select name="chargingRateUnit" [(ngModel)]="cfg.chargingRateUnit"><option value="W">W</option><option value="A">A</option></select></label>
           <label>{{ t('cfg.voltage') }}<input name="voltage" type="number" min="100" [(ngModel)]="cfg.voltage" /></label>
           <label>{{ t('cfg.phases') }}<select name="phases" [(ngModel)]="cfg.phases"><option [ngValue]="1">1</option><option [ngValue]="3">3</option></select></label>
-          <button class="primary" type="submit">{{ t('common.apply') }}</button>
+          <button class="primary" type="submit" [disabled]="ui.busy('config')">{{ t('common.apply') }}</button>
         </form>
       </section>
       <section class="panel">
@@ -199,7 +199,7 @@ const CONFIG_KEYS = ['siteLimitKw', 'buildingLoadKw', 'buildingLoadMode', 'strat
                 <td class="n">{{ p.target_soc != null ? p.target_soc + ' %' : t('ops.fromVehicle') }}</td><td class="n">{{ p.max_kw ? p.max_kw + ' kW' : '–' }}</td>
                 <td><span class="lamp" [class.plan]="open(p.status)" [class.on]="p.status === 'completed'" [class.bad]="p.status === 'failed'" [title]="p.note || ''">{{ t('plan.' + p.status) }}</span>
                   @if (p.note && !open(p.status)) { <div class="small muted">{{ p.note }}</div> }</td>
-                <td class="actions">@if (open(p.status)) { <button class="sm danger" (click)="cancelPlan(p.id)">{{ t('common.cancel') }}</button> }</td>
+                <td class="actions">@if (open(p.status)) { <button class="sm danger" [disabled]="ui.busy('plan:' + p.id)" (click)="cancelPlan(p.id)">{{ t('common.cancel') }}</button> }</td>
               </tr>
             } @empty { <tr><td colspan="9" class="muted">{{ t('ops.noPlans') }}</td></tr> }
           </tbody>
@@ -226,7 +226,7 @@ export class Operations {
   protected live = inject(Live);
   protected fleet = inject(Fleet);
   private api = inject(Api);
-  private ui = inject(Ui);
+  protected ui = inject(Ui);
   private nav = inject(Nav);
   private i18n = inject(I18n);
   protected t = this.i18n.t;
@@ -336,7 +336,8 @@ export class Operations {
       const v = (this.cfg as Record<string, unknown>)[k];
       body[k] = typeof v === 'string' && !isNaN(Number(v)) && k !== 'strategy' && k !== 'buildingLoadMode' && k !== 'chargingRateUnit' ? Number(v) : v;
     }
-    await this.ui.run(() => this.api.put('/config', body), 'ops.configApplied');
+    if (this.ui.busy('config')) return;
+    await this.ui.run(() => this.api.put('/config', body), 'ops.configApplied', 'config');
     this.editing.set(false);
     (document.activeElement as HTMLElement | null)?.blur();
   }
@@ -344,17 +345,19 @@ export class Operations {
     await this.ui.run(
       () => this.api.post<{ status: string }>(`/chargers/${encodeURIComponent(ch.id)}/remote-stop`, { connectorId: c.connectorId }),
       (r) => this.t('ops.remoteStop', { status: r.status }),
+      `stop:${ch.id}#${c.connectorId}`,
     );
   }
   async reset(ch: ChargerLive) {
-    if (!confirm(this.t('ops.confirmReset', { id: ch.id }))) return;
+    if (this.ui.busy('reset:' + ch.id) || !confirm(this.t('ops.confirmReset', { id: ch.id }))) return;
     await this.ui.run(
       () => this.api.post<{ status: string }>(`/chargers/${encodeURIComponent(ch.id)}/reset`, { type: 'Soft' }),
       (r) => this.t('ops.resetResult', { status: r.status }),
+      'reset:' + ch.id,
     );
   }
   async cancelPlan(id: number) {
-    if (!confirm(this.t('ops.confirmCancelPlan', { id }))) return;
-    await this.ui.run(() => this.api.del(`/charging-plans/${id}`), 'ops.planCancelled');
+    if (this.ui.busy('plan:' + id) || !confirm(this.t('ops.confirmCancelPlan', { id }))) return;
+    await this.ui.run(() => this.api.del(`/charging-plans/${id}`), 'ops.planCancelled', 'plan:' + id);
   }
 }

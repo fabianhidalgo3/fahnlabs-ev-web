@@ -54,6 +54,7 @@ export const EN: Dictionary = {
   'common.online': 'Online',
   'common.optional': 'optional',
   'common.refresh': 'Refresh',
+  'common.exportFailed': 'The export could not be downloaded',
   'common.save': 'Save',
   'common.saveChanges': 'Save changes',
   'common.updatedAt': 'Updated at {time}',

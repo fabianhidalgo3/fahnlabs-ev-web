@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Api } from '../core/api.service';
 import { Live } from '../core/live.service';
 import { I18n } from '../i18n/i18n.service';
+import { Ui, saveBlob } from '../core/ui.service';
 import { CommandRow, CommandStat, OcppRow } from '../core/types';
 import { fmtDay, fmtTime, num } from '../core/fmt';
 
@@ -108,7 +109,7 @@ function meter(p: any): Meter {
     </section>
 
     <section class="panel">
-      <div class="panel-head"><h2>{{ t('motor.logTitle') }}</h2><button class="sm" (click)="exportCsv()">{{ t('motor.exportCsv') }}</button></div>
+      <div class="panel-head"><h2>{{ t('motor.logTitle') }}</h2><button class="sm" [disabled]="ui.busy('export:ocpp-log')" (click)="exportCsv()">{{ t('motor.exportCsv') }}</button></div>
       <div class="row filters-inline">
         <label>{{ t('motor.action') }}
           <select [ngModel]="action()" (ngModelChange)="action.set($event); reload()">
@@ -170,6 +171,7 @@ function meter(p: any): Meter {
 export class Motor implements OnDestroy {
   private api = inject(Api);
   private live = inject(Live);
+  protected ui = inject(Ui);
   protected t = inject(I18n).t;
   protected parse = parse;
 
@@ -348,6 +350,10 @@ export class Motor implements OnDestroy {
   }
 
   exportCsv() {
+    return this.ui.run(async () => this.writeCsv(), undefined, 'export:ocpp-log');
+  }
+
+  private writeCsv() {
     const meterView = this.isMeter();
     const head = meterView ? ['time', 'charger', 'connector', 'session', 'kW', 'kWh', 'A', 'SoC', 'V'] : ['time', 'charger', 'direction', 'kind', 'action', 'error', 'payload'];
     const rows = this.log().map((r) => {
@@ -359,10 +365,6 @@ export class Motor implements OnDestroy {
     });
     const cell = (v: unknown) => (v == null ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
     const csv = '﻿' + [head, ...rows].map((r) => r.map(cell).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `ocpp-${meterView ? 'metervalues' : 'log'}-${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    saveBlob(new Blob([csv], { type: 'text/csv' }), `ocpp-${meterView ? 'metervalues' : 'log'}-${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.csv`);
   }
 }

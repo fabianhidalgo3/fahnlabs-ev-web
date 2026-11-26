@@ -99,7 +99,7 @@ const TARIFF_KEYS: (keyof Tariffs)[] = ['energyPriceClp', 'demandChargeClpKw', '
             @for (k of tariffKeys; track k) {
               <label>{{ t('tariff.' + k) }}<input [name]="k" type="number" min="0" step="any" [(ngModel)]="tariffs[k]" /></label>
             }
-            <button class="primary" type="submit">{{ t('energy.saveRecalc') }}</button>
+            <button class="primary" type="submit" [disabled]="ui.busy('tariffs')">{{ t('energy.saveRecalc') }}</button>
           </form>
         </section>
       </div>
@@ -115,7 +115,7 @@ const TARIFF_KEYS: (keyof Tariffs)[] = ['energyPriceClp', 'demandChargeClpKw', '
 })
 export class Energy implements OnDestroy {
   private api = inject(Api);
-  private ui = inject(Ui);
+  protected ui = inject(Ui);
   private i18n = inject(I18n);
   protected t = this.i18n.t;
   protected num = num;
@@ -198,7 +198,8 @@ export class Energy implements OnDestroy {
   async save() {
     const energy: Record<string, number> = {};
     for (const k of TARIFF_KEYS) if (this.tariffs[k] != null) energy[k] = Number(this.tariffs[k]);
-    await this.ui.run(() => this.api.put('/config', { energy }), 'energy.saved');
+    if (this.ui.busy('tariffs')) return;
+    await this.ui.run(() => this.api.put('/config', { energy }), 'energy.saved', 'tariffs');
     this.editing = false;
     (document.activeElement as HTMLElement | null)?.blur();
     this.load();

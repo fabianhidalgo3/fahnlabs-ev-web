@@ -13,7 +13,10 @@ import { fmtDate, fmtDur, kw, num } from '../core/fmt';
       <h2>{{ t('data.exportTitle') }}</h2>
       <p class="note">{{ t('data.exportNote') }}</p>
       <div class="row">
-        @for (e of exports; track e.file) { <a class="btn" [href]="'/api/v1/exports/' + e.file">{{ t(e.label) }}</a> }
+        @for (e of exports; track e.file) {
+          @let url = '/api/v1/exports/' + e.file;
+          <a class="btn" [href]="url" [attr.aria-disabled]="ui.busy('export:' + url) || null" (click)="$event.preventDefault(); ui.download(url)">{{ t(e.label) }}</a>
+        }
       </div>
     </section>
     <section class="panel">
@@ -33,7 +36,8 @@ import { fmtDate, fmtDur, kw, num } from '../core/fmt';
                 <td class="n nowrap">{{ soc(s) }}</td>
                 <td class="n">{{ s.max_power_w != null ? kw(s.max_power_w) : s.power_w != null ? kw(s.power_w) : '–' }}</td>
                 <td>@if (s.live) { <span class="lamp charge">{{ t('cal.ongoing') }}</span> } @else { {{ s.stop_reason || '–' }} }</td>
-                <td><a [href]="'/api/v1/exports/meter-samples.csv?transactionId=' + s.transaction_id" [title]="t('data.samplesCsv')">CSV</a></td>
+                @let csvUrl = '/api/v1/exports/meter-samples.csv?transactionId=' + s.transaction_id;
+                <td><a [href]="csvUrl" [title]="t('data.samplesCsv')" [attr.aria-disabled]="ui.busy('export:' + csvUrl) || null" (click)="$event.preventDefault(); ui.download(csvUrl)">CSV</a></td>
               </tr>
             } @empty { <tr><td colspan="11" class="muted">{{ t('data.none') }}</td></tr> }
           </tbody>
@@ -45,7 +49,7 @@ import { fmtDate, fmtDur, kw, num } from '../core/fmt';
 })
 export class Sessions {
   private api = inject(Api);
-  private ui = inject(Ui);
+  protected ui = inject(Ui);
   protected t = inject(I18n).t;
   protected fmtDate = fmtDate;
   protected fmtDur = fmtDur;

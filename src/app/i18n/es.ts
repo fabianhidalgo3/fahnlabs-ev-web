@@ -52,6 +52,7 @@ export const ES: Dictionary = {
   'common.online': 'Conectado',
   'common.optional': 'opcional',
   'common.refresh': 'Actualizar',
+  'common.exportFailed': 'No se pudo descargar la exportación',
   'common.save': 'Guardar',
   'common.saveChanges': 'Guardar cambios',
   'common.updatedAt': 'Actualizado a las {time}',

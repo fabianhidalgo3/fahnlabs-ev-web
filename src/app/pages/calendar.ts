@@ -138,11 +138,12 @@ interface Bar {
             </svg>
             <div class="legend"><span><i style="background: var(--carga)"></i>{{ t('cal.measuredKw') }}</span><span><i class="dash" style="color: var(--consigna)"></i>{{ t('cal.allocatedKw') }}</span><span><i style="background: var(--limite)"></i>SoC (%)</span></div>
           } @else { <p class="note">{{ t('cal.noSamples') }}</p> }
-          <p><a [href]="'/api/v1/exports/meter-samples.csv?transactionId=' + d.session.transaction_id">{{ t('cal.downloadSamples') }}</a></p>
+          @let samplesUrl = '/api/v1/exports/meter-samples.csv?transactionId=' + d.session.transaction_id;
+          <p><a [href]="samplesUrl" [attr.aria-disabled]="ui.busy('export:' + samplesUrl) || null" (click)="$event.preventDefault(); ui.download(samplesUrl)">{{ t('cal.downloadSamples') }}</a></p>
         }
         @if (d.plan) {
           <p class="note">{{ t('cal.planNote') }}</p>
-          <button class="sm danger" (click)="cancelPlan(d.plan)">{{ t('cal.cancelPlan') }}</button>
+          <button class="sm danger" [disabled]="ui.busy('plan:' + d.plan.id)" (click)="cancelPlan(d.plan)">{{ t('cal.cancelPlan') }}</button>
         }
       </aside>
     }
@@ -151,7 +152,7 @@ interface Bar {
 })
 export class Calendar implements OnDestroy {
   private api = inject(Api);
-  private ui = inject(Ui);
+  protected ui = inject(Ui);
   private live = inject(Live);
   protected fleet = inject(Fleet);
   protected i18n = inject(I18n);
@@ -438,8 +439,8 @@ export class Calendar implements OnDestroy {
   }
 
   async cancelPlan(p: Plan) {
-    if (!confirm(this.t('ops.confirmCancelPlan', { id: p.id }))) return;
-    await this.ui.run(() => this.api.del(`/charging-plans/${p.id}`), 'ops.planCancelled');
+    if (this.ui.busy('plan:' + p.id) || !confirm(this.t('ops.confirmCancelPlan', { id: p.id }))) return;
+    await this.ui.run(() => this.api.del(`/charging-plans/${p.id}`), 'ops.planCancelled', 'plan:' + p.id);
     this.detail.set(null);
     this.load();
   }
