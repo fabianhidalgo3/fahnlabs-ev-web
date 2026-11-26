@@ -1,10 +1,10 @@
-# ev-web · Yard dashboard
+# fahnlabs-ev-web · Yard dashboard
 
 Part of **EV yard power control** by FAHNLABS: real-time power allocation for an electric-vehicle charging yard.
 Overview, architecture and deployment: [fahnlabs-ev-deploy](https://github.com/fabianhidalgo3/fahnlabs-ev-deploy).
 
 Operations dashboard with the "yard switchboard" design: the busbar shows the yard limit as a hazard band and each
-charger is a circuit. It only talks to [ev-bff](https://github.com/fabianhidalgo3/fahnlabs-ev-bff).
+charger is a circuit. It only talks to [fahnlabs-ev-bff](https://github.com/fabianhidalgo3/fahnlabs-ev-bff).
 
 ## Stack
 
